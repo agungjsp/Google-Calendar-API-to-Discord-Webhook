@@ -48,7 +48,7 @@ function postEventsToChannel() {
                     'Content-Type': 'application/json',
                 },
                 payload: JSON.stringify({
-                    content: 'YOUR_CONTENT_WITH_DISCORD_MARKDOWN',
+                    content: 'YOUR_30_MINUTES_REMINDER_CONTENT_WITH_DISCORD_MARKDOWN',
                 }),
             };
             // Send the POST request
@@ -70,10 +70,10 @@ function postEventsToChannel() {
     let response = Calendar.Events.list(CALENDAR_ID, optionalArgs);
     let events = response.items;
     if (events.length > 0) {
+        Logger.log(`${events30.length} event(s) found.`);
         for (i = 0; i < events.length; i++) {
             let event = events[i];
             let ISOStartDate = event.start.dateTime || event.start.date;
-            let ISOEndDate = event.end.dateTime || event.end.date;
 
             // The Calendar API's .list function will continously return events whose endDate has not been reached yet (timeMin is based on the event's end time)
             // Since this script is meant to run every minute, we have to skip these events ourselves
@@ -89,43 +89,10 @@ function postEventsToChannel() {
                     'Content-Type': 'application/json',
                 },
                 payload: JSON.stringify({
-                    content: '‌',
-                    embeds: [
-                        {
-                            author: {
-                                name: `${event.summary}`,
-                                icon_url:
-                                    'https://cdn.discordapp.com/attachments/696400605908041794/888874282950750238/1200px-Google_Calendar_icon_28202029.png',
-                            },
-                            timestamp: DTnow.toISO(),
-                            description: `[Google Event Link](${event.htmlLink})`,
-                            color: 1425196,
-                            fields: [
-                                {
-                                    name: 'Start Time',
-                                    value: ISOToDiscordUnix(ISOStartDate) ?? NO_VALUE_FOUND,
-                                    inline: false,
-                                },
-                                {
-                                    name: 'End Time',
-                                    value: ISOToDiscordUnix(ISOEndDate) ?? NO_VALUE_FOUND,
-                                    inline: false,
-                                },
-                                {
-                                    name: 'Location',
-                                    value: event.location ?? NO_VALUE_FOUND,
-                                    inline: false,
-                                },
-                                {
-                                    name: 'Description',
-                                    value: event.description ?? NO_VALUE_FOUND,
-                                    inline: false,
-                                },
-                            ],
-                        },
-                    ],
+                    content: 'YOUR_ANNOUNCEMENT_CONTENT_WITH_DISCORD_MARKDOWN',
                 }),
             };
+            // Send the POST request
             Logger.log(options, null, 2);
             UrlFetchApp.fetch(CHANNEL_POST_URL, options);
         }
@@ -136,6 +103,9 @@ function postEventsToChannel() {
 
 /**
  * Converts an ISO string into a discord formatted timestamp
+ *
+ * @param {string} isoString
+ * @returns {string}
  */
 function ISOToDiscordUnix(isoString) {
     return `<t:${Math.floor(DateTime.fromISO(isoString).toSeconds())}:F>`;
