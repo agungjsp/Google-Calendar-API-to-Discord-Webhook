@@ -110,3 +110,29 @@ function postEventsToChannel() {
 function ISOToDiscordUnix(isoString) {
     return `<t:${Math.floor(DateTime.fromISO(isoString).toSeconds())}:F>`;
 }
+
+/**
+ *
+ * Converts HTML to Markdown
+ *
+ * @param {string} html
+ * @returns {string}
+ */
+function convertHTMLToMarkdown(html) {
+    let markdown = html
+        .replace(/<h1>(.*?)<\/h1>/gi, '# $1')
+        .replace(/<h2>(.*?)<\/h2>/gi, '## $1')
+        .replace(/<h3>(.*?)<\/h3>/gi, '### $1')
+        .replace(/<h4>(.*?)<\/h4>/gi, '#### $1')
+        .replace(/<h5>(.*?)<\/h5>/gi, '##### $1')
+        .replace(/<h6>(.*?)<\/h6>/gi, '###### $1')
+        .replace(/<p>(.*?)<\/p>/gi, '$1\n')
+        .replace(/<br>/gi, '\n')
+        .replace(/<a href="(.*?)">(.*?)<\/a>/gi, '[$2]($1)')
+        .replace(/<ul>/gi, '')
+        .replace(/<\/ul>/gi, '')
+        .replace(/<li>(.*?)<\/li>/gi, '* $1')
+        .replace(/<strong>(.*?)<\/strong>/gi, '**$1**')
+        .replace(/<em>(.*?)<\/em>/gi, '*$1*');
+    return markdown;
+}
