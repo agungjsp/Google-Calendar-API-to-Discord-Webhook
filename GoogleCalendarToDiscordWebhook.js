@@ -18,48 +18,23 @@ eval(
 let DateTime = luxon.DateTime;
 const DTnow = DateTime.now().startOf('minute'); // Will consider 'now' as the beginning the minute to deal with second offsets issues with trigger over time.
 
+/**
+ * Main function
+ */
 function postEventsToChannel() {
-    // .list parameters for 30 minutes reminder
-    let optionalArgs30 = {
-        timeMin: DTnow.toISO(),
-        timeMax: DTnow.plus({ minutes: minsInAdvance30 }).toISO(),
-        showDeleted: false,
-        singleEvents: true,
-        orderBy: 'startTime',
-    };
-    let response30 = Calendar.Events.list(CALENDAR_ID, optionalArgs30);
-    let events30 = response30.items;
-    if (events30.length > 0) {
-        Logger.log(`${events30.length} event(s) found.`);
-        for (i = 0; i < events30.length; i++) {
-            let event = events30[i];
-            let ISOStartDate = event.start.dateTime || event.start.date;
-            let ISOEndDate = event.end.dateTime || event.end.date;
+    let events30 = fetchEvents(minsInAdvance30);
+    sendPostRequest(events30, minsInAdvance30);
 
-            if (DateTime.fromISO(ISOStartDate) < DTnow.plus({ minutes: minsInAdvance30 - 1 })) {
-                Logger.log(`Event ${event.summary} [${event.id}] has already started. Skipping`);
-                continue;
-            }
+    let events = fetchEvents(minsInAdvance);
+    sendPostRequest(events, minsInAdvance);
+}
 
-            // Build the POST request for 30 minutes reminder
-            let options = {
-                method: 'post',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                payload: JSON.stringify({
-                    content: 'YOUR_30_MINUTES_REMINDER_CONTENT_WITH_DISCORD_MARKDOWN',
-                }),
-            };
-            // Send the POST request
-            Logger.log(options, null, 2);
-            UrlFetchApp.fetch(CHANNEL_POST_URL, options);
-        }
-    } else {
-        Logger.log(`No events starting within ${minsInAdvance30} minute(s) found.`);
-    }
-
-    // .list parameters. See https://developers.google.com/calendar/api/v3/reference/events/list?hl=en
+/**
+ * Fetches events from the calendar
+ * @param {number} minsInAdvance
+ * @returns {object}
+ */
+function fetchEvents(minsInAdvance) {
     let optionalArgs = {
         timeMin: DTnow.toISO(),
         timeMax: DTnow.plus({ minutes: minsInAdvance }).toISO(), // Will only show events starting in the next x minutes
@@ -69,30 +44,48 @@ function postEventsToChannel() {
     };
     let response = Calendar.Events.list(CALENDAR_ID, optionalArgs);
     let events = response.items;
+    return events;
+}
+
+/**
+ * Sends a POST request to the Discord webhook
+ * @param {object} events
+ * @param {number} minsInAdvance
+ */
+function sendPostRequest(events, minsInAdvance) {
     if (events.length > 0) {
-        Logger.log(`${events30.length} event(s) found.`);
+        Logger.log(`${events.length} event(s) found.`);
         for (i = 0; i < events.length; i++) {
             let event = events[i];
             let ISOStartDate = event.start.dateTime || event.start.date;
+            let ISOEndDate = event.end.dateTime || event.end.date;
+            let content = '';
 
-            // The Calendar API's .list function will continously return events whose endDate has not been reached yet (timeMin is based on the event's end time)
-            // Since this script is meant to run every minute, we have to skip these events ourselves
+            if (minsInAdvance === 1) {
+                content = `@everyone\n**${event.summary}** is starting now!`;
+            } else {
+                let eventSummary = event.summary;
+                let startDate = ISOToDiscordUnix(ISOStartDate) ?? NO_VALUE_FOUND;
+                let endDate = ISOToDiscordUnix(ISOEndDate) ?? NO_VALUE_FOUND;
+                let eventDescription = convertHTMLToMarkdown(event.description) ?? NO_VALUE_FOUND;
+
+                content = `Title: **${eventSummary}**\nStart: ${startDate}\nEnd: ${endDate}\nDescription: ${eventDescription}`;
+            }
+
             if (DateTime.fromISO(ISOStartDate) < DTnow.plus({ minutes: minsInAdvance - 1 })) {
                 Logger.log(`Event ${event.summary} [${event.id}] has already started. Skipping`);
                 continue;
             }
 
-            // Build the POST request
             let options = {
                 method: 'post',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 payload: JSON.stringify({
-                    content: 'YOUR_ANNOUNCEMENT_CONTENT_WITH_DISCORD_MARKDOWN',
+                    content: content,
                 }),
             };
-            // Send the POST request
             Logger.log(options, null, 2);
             UrlFetchApp.fetch(CHANNEL_POST_URL, options);
         }
@@ -103,7 +96,6 @@ function postEventsToChannel() {
 
 /**
  * Converts an ISO string into a discord formatted timestamp
- *
  * @param {string} isoString
  * @returns {string}
  */
@@ -112,9 +104,7 @@ function ISOToDiscordUnix(isoString) {
 }
 
 /**
- *
  * Converts HTML to Markdown
- *
  * @param {string} html
  * @returns {string}
  */
