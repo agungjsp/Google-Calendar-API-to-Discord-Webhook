@@ -118,6 +118,7 @@ function convertHTMLToMarkdown(html) {
         .replace(/<h6>(.*?)<\/h6>/gi, '###### $1')
         .replace(/<p>(.*?)<\/p>/gi, '$1\n')
         .replace(/<br>/gi, '\n')
+        .replace(/<a href="(.*?)">(.*?)<\/a>/gi, '$1')
         .replace(/<a href="(.*?)">(.*?)<\/a>/gi, '[$2]($1)')
         .replace(/<ul>/gi, '')
         .replace(/<\/ul>/gi, '')
