@@ -10,6 +10,7 @@ const CALENDAR_ID = 'GOOGLE_CALENDAR_ID_GOES_HERE';
 const NO_VALUE_FOUND = 'N/A';
 const minsInAdvance = 1; // Set the number of minutes in advance you'd like events to be posted to discord. Must be 1 or greater
 const minsInAdvance30 = 31; // It's a reminder for 30 minutes before the event starts
+const minsInAdvance1440 = 1441; // It's a reminder for 24 hours before the event starts
 
 // Import Luxon
 eval(
@@ -22,6 +23,9 @@ const DTnow = DateTime.now().startOf('minute'); // Will consider 'now' as the be
  * Main function
  */
 function postEventsToChannel() {
+    let events1440 = fetchEvents(minsInAdvance1440);
+    sendPostRequest(events1440, minsInAdvance1440);
+
     let events30 = fetchEvents(minsInAdvance30);
     sendPostRequest(events30, minsInAdvance30);
 
@@ -108,7 +112,8 @@ function ISOToDiscordUnix(isoString) {
  * @param {string} html
  * @returns {string}
  */
-function convertHTMLToMarkdown(html) {
+
+function convertHTMLToMarkdown(html = '') {
     let markdown = html
         .replace(/<h1>(.*?)<\/h1>/gi, '# $1')
         .replace(/<h2>(.*?)<\/h2>/gi, '## $1')
